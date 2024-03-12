@@ -182,29 +182,6 @@ const drawExistingPoints = (context, supportPointsSelect, controlPointsSelect, s
     }
 }
 
-const drawBezierCurve = (context, points, step, settings) => {
-    context.beginPath()
-    context.moveTo(points[0].x, points[0].y)
-
-    for (let t = 0; t <= 1; t += step) {
-        let x = 0
-        let y = 0
-
-        for (let i = 0; i < points.length; i++) {
-            const coefficient = binomialCoefficient(points.length - 1, i) * Math.pow(1 - t, points.length - 1 - i) * Math.pow(t, i)
-            x += points[i].x * coefficient
-            y += points[i].y * coefficient
-        }
-
-        context.lineTo(x, y)
-    }
-
-    context.strokeStyle = settings.strokeStyle
-    context.lineWidth = settings.lineWidth
-
-    context.stroke()
-}
-
 // Функція для обчислення біноміального коефіцієнта
 const binomialCoefficient = (n, k) => {
     if (k === 0 || k === n) {
