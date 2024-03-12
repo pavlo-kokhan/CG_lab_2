@@ -12,21 +12,28 @@ const axesSettings = {
     'arrowLength': 20,
     'labelsFont': '20px Arial',
     'labelsFillStyle': 'red',
-    'labelsMargin': 25,
+    'labelsMargin': 20,
     'strokeStyle': 'black',
     'lineWidth': 1,
 }
 
 const gridSettings = {
     'strokeStyle': 'black',
-    'lineWidth': 0.15
+    'lineWidth': 0.15,
 }
 
-const pointSettings = {
+const supportPointSettings = {
     'radius': 5,
     'strokeStyle': 'black',
     'lineWidth': 1,
-    'fillStyle': 'black'
+    'fillStyle': 'black',
+}
+
+const controlPointSettings = {
+    'radius': 5,
+    'strokeStyle': 'black',
+    'lineWidth': 1,
+    'fillStyle': 'red',
 }
 
 const transformX = (x, scale, width) => {
@@ -35,6 +42,37 @@ const transformX = (x, scale, width) => {
 
 const transformY = (y, scale, height) => {
     return y * scale * (-1) + height / 2
+}
+
+const retransformX = (x, scale, width) => {
+    return (x - width / 2) / scale
+}
+
+const retransformY = (y, scale, height) => {
+    return (y - height / 2) / scale * (-1)
+}
+
+const getPointOption = (xInput, yInput, scale, width, height) => {
+    const option = document.createElement('option');
+
+    const x = parseFloat(xInput.value)
+    const y = parseFloat(yInput.value)
+
+    if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
+        alert('Incorrect coordinates input')
+        return
+    }
+
+    option.text = `(${x}, ${y})`
+    
+    const newPoint = {
+        'x': transformX(x, scale, width),
+        'y': transformY(y, scale, height)
+    }
+
+    option.value = JSON.stringify(newPoint)
+    
+    return option
 }
 
 const drawCoordinateAxes = (context, width, height, step, settings) => {
@@ -122,7 +160,7 @@ const refreshCoordinateAxes = (context, width, height, step, axesSettings, gridS
 const drawPoint = (context, point, settings) => {
     context.beginPath()
     context.arc(point.x, point.y, settings.radius, 0, 2 * Math.PI)
-    context.strokeStyle = settings.strokeStyle
+    context.strokeStyle = settings.strokeStyle  
     context.lineWidth = settings.lineWidth
     context.stroke()
     context.fillStyle = settings.fillStyle
@@ -166,78 +204,104 @@ const binomialCoefficient = (n, k) => {
 
 const xCoordInput = document.getElementById('x-coord')
 const yCoordInput = document.getElementById('y-coord')
-const pointsSelect = document.getElementById('points-select')
+const supportPointsSelect = document.getElementById('support-points-select')
+const controlPointsSelect = document.getElementById('control-points-select')
 
-const buttonAddPoint = document.querySelector('.btn-add-point')
-const buttonEdit = document.querySelector('.btn-edit')
-const buttonDelete = document.querySelector('.btn-delete')
+const buttonAddSupprotPoint = document.querySelector('.btn-add-support-point')
+const buttonAddControlPoint = document.querySelector('.btn-add-control-point')
+const buttonSupportPointEdit = document.querySelector('.btn-support-points-edit')
+const buttonSupportPointDelete = document.querySelector('.btn-support-points-delete')
+const buttonControlPointEdit = document.querySelector('.btn-control-points-edit')
+const buttonControlPointDelete = document.querySelector('.btn-control-points-delete')
 const buttonClear = document.querySelector('.btn-clear')
 const buttonDrawCurve = document.querySelector('.btn-drawCurve')
 
-buttonAddPoint.onclick = () => {
-    const option = document.createElement('option');
+buttonAddSupprotPoint.onclick = () => {
+    const option = getPointOption(xCoordInput, yCoordInput, scale, canvas.width, canvas.height)
 
-    const x = parseFloat(xCoordInput.value)
-    const y = parseFloat(yCoordInput.value)
-
-    if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
-        alert('Incorrect coordinates input')
-        return
+    for (let i = 0; i < controlPointsSelect.options.length; i++) {
+        if (supportPointsSelect.options[i].value === option.value) {
+            return
+        }
     }
-
-    option.text = `(${x}, ${y})`
     
-    const newPoint = {
-        'x': transformX(x, scale, canvas.width),
-        'y': transformY(y, scale, canvas.height)
-    }
+    supportPointsSelect.appendChild(option)
 
-    option.value = JSON.stringify(newPoint)
-    
-    pointsSelect.appendChild(option)
-
-    drawPoint(context, newPoint, pointSettings)
+    drawPoint(context, JSON.parse(option.value), supportPointSettings)
 }
 
-buttonEdit.onclick = () => {
-    const options = pointsSelect.options
-    const selectedOption = options[pointsSelect.selectedIndex]
+buttonAddControlPoint.onclick = () => {
+    const option = getPointOption(xCoordInput, yCoordInput, scale, canvas.width, canvas.height)
 
-    const x = parseFloat(xCoordInput.value)
-    const y = parseFloat(yCoordInput.value) 
-
-    if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
-        alert('Incorrect coordinates input')
-        return
+    for (let i = 0; i < controlPointsSelect.options.length; i++) {
+        if (controlPointsSelect.options[i].value === option.value) {
+            return
+        }
     }
+    
+    controlPointsSelect.appendChild(option)
 
-    selectedOption.text = `(${x}, ${y})`
+    drawPoint(context, JSON.parse(option.value), controlPointSettings)
+}
 
-    const newPoint = {
-        'x': transformX(x, scale, canvas.width),
-        'y': transformY(y, scale, canvas.height)
-    }
+buttonSupportPointEdit.onclick = () => {
+    const supportOptions = supportPointsSelect.options
 
-    selectedOption.value = JSON.stringify(newPoint)
+    supportOptions[supportPointsSelect.selectedIndex] = getPointOption(xCoordInput, yCoordInput, scale, canvas.width, canvas.height)
     
     refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
 
-    for (let i = 0; i < options.length; i++) {
-        drawPoint(context, JSON.parse(options[i].value), pointSettings)
+    for (let i = 0; i < supportOptions.length; i++) {
+        drawPoint(context, JSON.parse(supportOptions[i].value), supportPointSettings)
+    }
+
+    for (let i = 0; i < controlPointsSelect.options.length; i++) {
+        drawPoint(context, JSON.parse(controlPointsSelect.options[i].value), controlPointSettings)
     }
 }
 
-buttonDelete.onclick = () => {
-    const options = pointsSelect.options
-    const selectedOption = options[pointsSelect.selectedIndex]
+buttonControlPointEdit.onclick = () => {
+    const controlOptions = controlPointsSelect.options
+
+    controlOptions[controlPointsSelect.selectedIndex] = getPointOption(xCoordInput, yCoordInput, scale, canvas.width, canvas.height)
+    
+    refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
+
+    for (let i = 0; i < controlOptions.length; i++) {
+        drawPoint(context, JSON.parse(controlOptions[i].value), controlPointSettings)
+    }
+
+    for (let i = 0; i < supportPointsSelect.options.length; i++) {
+        drawPoint(context, JSON.parse(supportPointsSelect.options[i].value), supportPointSettings)
+    }
+}
+
+buttonSupportPointDelete.onclick = () => {
+    const options = supportPointsSelect.options
+    const selectedOption = options[supportPointsSelect.selectedIndex]
 
     if (selectedOption) {
-        pointsSelect.removeChild(selectedOption)
+        supportPointsSelect.removeChild(selectedOption)
 
         refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
 
         for (let i = 0; i < options.length; i++) {
-            drawPoint(context, JSON.parse(options[i].value), pointSettings)
+            drawPoint(context, JSON.parse(options[i].value), supportPointSettings)
+        }
+    }
+}
+
+buttonControlPointDelete.onclick = () => {
+    const options = controlPointsSelect.options
+    const selectedOption = options[controlPointsSelect.selectedIndex]
+
+    if (selectedOption) {
+        controlPointsSelect.removeChild(selectedOption)
+
+        refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
+
+        for (let i = 0; i < options.length; i++) {
+            drawPoint(context, JSON.parse(options[i].value), supportPointSettings)
         }
     }
 }
@@ -245,21 +309,31 @@ buttonDelete.onclick = () => {
 buttonClear.onclick = () => {
     refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
 
-    pointsSelect.innerHTML = ''
+    supportPointsSelect.innerHTML = ''
+    controlPointsSelect.innerHTML = ''
     xCoordInput.value = ''
     yCoordInput.value = ''
 }
 
 buttonDrawCurve.onclick = () => {
-    const selectedPoints = []
-
-    const options = pointsSelect.options
-
-    for (let i = 0; i < options.length; i++) {
-        selectedPoints.push(JSON.parse(options[i].value))
+    if (supportPointsSelect.options.length < 2) {
+        alert('You can`t draw curve without 2 support points')
+        return
     }
 
-    drawBezierCurve(context, selectedPoints, 0.001, 'black', 2)
+    const curvePoints = []
+
+    const options = controlPointsSelect.options
+
+    curvePoints.push(JSON.parse(supportPointsSelect.options[0].value))
+
+    for (let i = 0; i < options.length; i++) {
+        curvePoints.push(JSON.parse(options[i].value))
+    }
+
+    curvePoints.push(JSON.parse(supportPointsSelect.options[1].value))
+
+    drawBezierCurve(context, curvePoints, 0.001, 'black', 2)
 }
 
 drawCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings)
