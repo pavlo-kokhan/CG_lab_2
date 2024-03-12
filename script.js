@@ -36,6 +36,11 @@ const controlPointSettings = {
     'fillStyle': 'red',
 }
 
+const curveSettings = {
+    'strokeStyle': 'black',
+    'lineWidth': 2,
+}
+
 const transformX = (x, scale, width) => {
     return x * scale + width / 2
 }
@@ -53,7 +58,7 @@ const retransformY = (y, scale, height) => {
 }
 
 const getPointOption = (xInput, yInput, scale, width, height) => {
-    const option = document.createElement('option');
+    const option = document.createElement('option')
 
     const x = parseFloat(xInput.value)
     const y = parseFloat(yInput.value)
@@ -131,30 +136,24 @@ const drawGrid = (context, width, height, step, settings) => {
 
     // horizontal grid lines drawing
     for (let y = height / 2 + step; y <= height; y += step) {
-        context.moveTo(0, y);
-        context.lineTo(width, y);
-        context.moveTo(0, height / 2 - (y - height / 2));
-        context.lineTo(width, height / 2 - (y - height / 2));
+        context.moveTo(0, y)
+        context.lineTo(width, y)
+        context.moveTo(0, height / 2 - (y - height / 2))
+        context.lineTo(width, height / 2 - (y - height / 2))
     }
     
     // vertical grid lines drawing
     for (let x = width / 2 + step; x <= width; x += step) {
-        context.moveTo(x, 0);
-        context.lineTo(x, height);
-        context.moveTo(width / 2 - (x - width / 2), 0);
-        context.lineTo(width / 2 - (x - width / 2), height);
+        context.moveTo(x, 0)
+        context.lineTo(x, height)
+        context.moveTo(width / 2 - (x - width / 2), 0)
+        context.lineTo(width / 2 - (x - width / 2), height)
     }
 
     context.strokeStyle = settings.strokeStyle
     context.lineWidth = settings.lineWidth
 
     context.stroke()
-}
-
-const refreshCoordinateAxes = (context, width, height, step, axesSettings, gridSettings) => {
-    context.clearRect(0, 0, width, height)
-    drawCoordinateAxes(context, width, height, step, axesSettings)
-    drawGrid(context, width, height, step, gridSettings)
 }
 
 const drawPoint = (context, point, settings) => {
@@ -167,45 +166,158 @@ const drawPoint = (context, point, settings) => {
     context.fill()
 }
 
-const drawBezierCurve = (context, points, step, strokeStyle, lineWidth) => {
-    context.beginPath();
-    context.moveTo(points[0].x, points[0].y);
+const refreshCoordinateAxes = (context, width, height, step, axesSettings, gridSettings) => {
+    context.clearRect(0, 0, width, height)
+    drawCoordinateAxes(context, width, height, step, axesSettings)
+    drawGrid(context, width, height, step, gridSettings)
+}
 
-    // Calculating each point on curve for t = 0..1
+const drawExistingPoints = (context, supportPointsSelect, controlPointsSelect, supportPointSettings, controlPointSettings) => {
+    for (let i = 0; i < supportPointsSelect.options.length; i++) {
+        drawPoint(context, JSON.parse(supportPointsSelect.options[i].value), supportPointSettings)
+    }
+
+    for (let i = 0; i < controlPointsSelect.options.length; i++) {
+        drawPoint(context, JSON.parse(controlPointsSelect.options[i].value), controlPointSettings)
+    }
+}
+
+const drawBezierCurve = (context, points, step, settings) => {
+    context.beginPath()
+    context.moveTo(points[0].x, points[0].y)
+
     for (let t = 0; t <= 1; t += step) {
-        let x = 0;
-        let y = 0;
+        let x = 0
+        let y = 0
 
-        // Recursive Beziers formula
         for (let i = 0; i < points.length; i++) {
-            const coefficient = binomialCoefficient(points.length - 1, i) * Math.pow(1 - t, points.length - 1 - i) * Math.pow(t, i);
-            x += points[i].x * coefficient;
-            y += points[i].y * coefficient;
+            const coefficient = binomialCoefficient(points.length - 1, i) * Math.pow(1 - t, points.length - 1 - i) * Math.pow(t, i)
+            x += points[i].x * coefficient
+            y += points[i].y * coefficient
         }
 
-        // Making line to the new point
-        context.lineTo(x, y);
+        context.lineTo(x, y)
     }
 
-    context.strokeStyle = strokeStyle
-    context.lineWidth = lineWidth
+    context.strokeStyle = settings.strokeStyle
+    context.lineWidth = settings.lineWidth
 
-    // Малюємо криву
-    context.stroke();
+    context.stroke()
 }
 
+// Функція для обчислення біноміального коефіцієнта
 const binomialCoefficient = (n, k) => {
     if (k === 0 || k === n) {
-        return 1;
+        return 1
     }
 
-    return binomialCoefficient(n - 1, k - 1) + binomialCoefficient(n - 1, k);
+    let numerator = 1
+    for (let i = n, j = 1; j <= k; i--, j++) {
+        numerator *= i
+    }
+
+    let denominator = 1
+    for (let i = k; i >= 1; i--) {
+        denominator *= i
+    }
+
+    return numerator / denominator;
 }
 
-const xCoordInput = document.getElementById('x-coord')
-const yCoordInput = document.getElementById('y-coord')
+// Функція для обчислення поліномів Бернштейна
+const bernsteinPolynomial = (i, n, t) => {
+    return binomialCoefficient(n, i) * Math.pow(t, i) * Math.pow(1 - t, n - i)
+}
+
+// Функція для обчислення координат точки на кривій Безьє за допомогою параметричної формули
+const computeBezierPoint = (controlPoints, t) => {
+    const n = controlPoints.length - 1
+
+    let x = 0, y = 0
+    for (let i = 0; i <= n; i++) {
+        const coefficient = bernsteinPolynomial(i, n, t)
+
+        x += controlPoints[i].x * coefficient
+        y += controlPoints[i].y * coefficient
+    }
+
+    return { x, y }
+}
+
+// Функція для побудови кривої Безьє на canvas
+const drawBezierCurveParameterFormula = (context, controlPoints, step, settings) => {
+    context.beginPath()
+
+    for (let t = 0; t <= 1; t += step) {
+        const { x, y } = computeBezierPoint(controlPoints, t)
+
+        console.log(`t = ${t}, point = (${retransformX(x, scale, canvas.width)}, ${retransformY(y, scale, canvas.height)})`)
+
+        if (t === 0) {
+            context.moveTo(x, y)
+        } else {
+            context.lineTo(x, y)
+        }
+    }
+
+    context.strokeStyle = settings.strokeStyle
+    context.lineWidth = settings.lineWidth
+    context.stroke()
+}
+
+// Функція для обчислення координат точки на кривій Безьє за допомогою рекурсивної формули
+const computeBezierRecursivePoint = (controlPoints, t) => {
+    const n = controlPoints.length - 1
+
+    const bernsteinRecursive = (i, n, t) => {
+        if (n === 0) {
+            return 1
+        }
+        if (i === 0) {
+            return (1 - t) * bernsteinRecursive(0, n - 1, t)
+        }
+        if (i === n) {
+            return t * bernsteinRecursive(n - 1, n - 1, t)
+        }
+
+        return (1 - t) * bernsteinRecursive(i, n - 1, t) + t * bernsteinRecursive(i - 1, n - 1, t)
+    }
+
+    let x = 0, y = 0
+    for (let i = 0; i <= n; i++) {
+        const coefficient = bernsteinRecursive(i, n, t)
+
+        x += controlPoints[i].x * coefficient
+        y += controlPoints[i].y * coefficient
+    }
+
+    return { x, y }
+}
+
+// Функція для малювання кривої Безьє на canvas за рекурсивно обчисленими точками
+const drawBezierRecursiveFormula = (context, controlPoints, step, settings) => {
+    context.beginPath();
+
+    for (let t = 0; t <= 1; t += step) {
+        const { x, y } = computeBezierRecursivePoint(controlPoints, t);
+
+        if (t === 0) {
+            context.moveTo(x, y);
+        } else {
+            context.lineTo(x, y);
+        }
+    }
+
+    context.strokeStyle = settings.strokeStyle;
+    context.lineWidth = settings.lineWidth;
+    context.stroke();
+};
+
 const supportPointsSelect = document.getElementById('support-points-select')
 const controlPointsSelect = document.getElementById('control-points-select')
+const xCoordInput = document.getElementById('x-coord')
+const yCoordInput = document.getElementById('y-coord')
+const curveStepInput = document.getElementById('curve-step')
 
 const buttonAddSupprotPoint = document.querySelector('.btn-add-support-point')
 const buttonAddControlPoint = document.querySelector('.btn-add-control-point')
@@ -214,13 +326,20 @@ const buttonSupportPointDelete = document.querySelector('.btn-support-points-del
 const buttonControlPointEdit = document.querySelector('.btn-control-points-edit')
 const buttonControlPointDelete = document.querySelector('.btn-control-points-delete')
 const buttonClear = document.querySelector('.btn-clear')
-const buttonDrawCurve = document.querySelector('.btn-drawCurve')
+const buttonDrawCurveParametric = document.querySelector('.btn-draw-curve-parametric')
+const buttonDrawCurveRecursive = document.querySelector('.btn-draw-curve-recursive')
 
 buttonAddSupprotPoint.onclick = () => {
+    if (supportPointsSelect.options.length === 2) {
+        alert('You can`t add more than 2 support points')
+        return
+    }
+
     const option = getPointOption(xCoordInput, yCoordInput, scale, canvas.width, canvas.height)
 
-    for (let i = 0; i < controlPointsSelect.options.length; i++) {
+    for (let i = 0; i < supportPointsSelect.options.length; i++) {
         if (supportPointsSelect.options[i].value === option.value) {
+            alert('You try to add existing point')
             return
         }
     }
@@ -235,6 +354,7 @@ buttonAddControlPoint.onclick = () => {
 
     for (let i = 0; i < controlPointsSelect.options.length; i++) {
         if (controlPointsSelect.options[i].value === option.value) {
+            alert('You try to add existing point')
             return
         }
     }
@@ -245,35 +365,17 @@ buttonAddControlPoint.onclick = () => {
 }
 
 buttonSupportPointEdit.onclick = () => {
-    const supportOptions = supportPointsSelect.options
-
-    supportOptions[supportPointsSelect.selectedIndex] = getPointOption(xCoordInput, yCoordInput, scale, canvas.width, canvas.height)
+    supportPointsSelect.options[supportPointsSelect.selectedIndex] = getPointOption(xCoordInput, yCoordInput, scale, canvas.width, canvas.height)
     
     refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
-
-    for (let i = 0; i < supportOptions.length; i++) {
-        drawPoint(context, JSON.parse(supportOptions[i].value), supportPointSettings)
-    }
-
-    for (let i = 0; i < controlPointsSelect.options.length; i++) {
-        drawPoint(context, JSON.parse(controlPointsSelect.options[i].value), controlPointSettings)
-    }
+    drawExistingPoints(context, supportPointsSelect, controlPointsSelect, supportPointSettings, controlPointSettings)
 }
 
 buttonControlPointEdit.onclick = () => {
-    const controlOptions = controlPointsSelect.options
-
-    controlOptions[controlPointsSelect.selectedIndex] = getPointOption(xCoordInput, yCoordInput, scale, canvas.width, canvas.height)
+    controlPointsSelect.options[controlPointsSelect.selectedIndex] = getPointOption(xCoordInput, yCoordInput, scale, canvas.width, canvas.height)
     
     refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
-
-    for (let i = 0; i < controlOptions.length; i++) {
-        drawPoint(context, JSON.parse(controlOptions[i].value), controlPointSettings)
-    }
-
-    for (let i = 0; i < supportPointsSelect.options.length; i++) {
-        drawPoint(context, JSON.parse(supportPointsSelect.options[i].value), supportPointSettings)
-    }
+    drawExistingPoints(context, supportPointsSelect, controlPointsSelect, supportPointSettings, controlPointSettings)
 }
 
 buttonSupportPointDelete.onclick = () => {
@@ -284,10 +386,7 @@ buttonSupportPointDelete.onclick = () => {
         supportPointsSelect.removeChild(selectedOption)
 
         refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
-
-        for (let i = 0; i < options.length; i++) {
-            drawPoint(context, JSON.parse(options[i].value), supportPointSettings)
-        }
+        drawExistingPoints(context, supportPointsSelect, controlPointsSelect, supportPointSettings, controlPointSettings)
     }
 }
 
@@ -299,10 +398,7 @@ buttonControlPointDelete.onclick = () => {
         controlPointsSelect.removeChild(selectedOption)
 
         refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
-
-        for (let i = 0; i < options.length; i++) {
-            drawPoint(context, JSON.parse(options[i].value), supportPointSettings)
-        }
+        drawExistingPoints(context, supportPointsSelect, controlPointsSelect, supportPointSettings, controlPointSettings)
     }
 }
 
@@ -313,13 +409,24 @@ buttonClear.onclick = () => {
     controlPointsSelect.innerHTML = ''
     xCoordInput.value = ''
     yCoordInput.value = ''
+    curveStepInput.value = ''
 }
 
-buttonDrawCurve.onclick = () => {
+buttonDrawCurveParametric.onclick = () => {
     if (supportPointsSelect.options.length < 2) {
         alert('You can`t draw curve without 2 support points')
         return
     }
+
+    const step = parseFloat(curveStepInput.value)
+
+    if (isNaN(step) || !isFinite(step)) {
+        alert('Incorrect step input')
+        return
+    }
+
+    refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
+    drawExistingPoints(context, supportPointsSelect, controlPointsSelect, supportPointSettings, controlPointSettings)
 
     const curvePoints = []
 
@@ -333,7 +440,38 @@ buttonDrawCurve.onclick = () => {
 
     curvePoints.push(JSON.parse(supportPointsSelect.options[1].value))
 
-    drawBezierCurve(context, curvePoints, 0.001, 'black', 2)
+    drawBezierCurveParameterFormula(context, curvePoints, step, curveSettings)
+}
+
+buttonDrawCurveRecursive.onclick = () => {
+    if (supportPointsSelect.options.length < 2) {
+        alert('You can`t draw curve without 2 support points')
+        return
+    }
+
+    const step = parseFloat(curveStepInput.value)
+
+    if (isNaN(step) || !isFinite(step)) {
+        alert('Incorrect step input')
+        return
+    }
+
+    refreshCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings, gridSettings)
+    drawExistingPoints(context, supportPointsSelect, controlPointsSelect, supportPointSettings, controlPointSettings)
+
+    const curvePoints = []
+
+    const options = controlPointsSelect.options
+
+    curvePoints.push(JSON.parse(supportPointsSelect.options[0].value))
+
+    for (let i = 0; i < options.length; i++) {
+        curvePoints.push(JSON.parse(options[i].value))
+    }
+
+    curvePoints.push(JSON.parse(supportPointsSelect.options[1].value))
+
+    drawBezierRecursiveFormula(context, curvePoints, step, curveSettings)
 }
 
 drawCoordinateAxes(context, canvas.width, canvas.height, scale, axesSettings)

@@ -59,6 +59,10 @@ body {
     width: 45%;
 }
 
+.one {
+    width: 100%;
+}
+
 .menu-item select {
     margin-bottom: 10px;
     padding: 5px;
