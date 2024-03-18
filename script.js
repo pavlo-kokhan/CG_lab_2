@@ -1,4 +1,5 @@
-import { scale, floatTolerance, axesSettings, gridSettings, supportPointSettings, controlPointSettings, curveSettings } from './settings.js'
+import { scale, floatTolerance, axesSettings, gridSettings, supportPointSettings, controlPointSettings, curveSettings } from './drawSettings.js'
+import { drawCoordinateAxes, drawGrid, drawPoint, refreshCoordinateAxes, drawExistingPoints } from './drawFunctions.js'
 
 const canvas = document.getElementById('canvas')
 const context = canvas.getContext('2d')
@@ -7,26 +8,27 @@ const container = document.querySelector('.canvas-container')
 canvas.width = container.clientWidth
 canvas.height = container.clientHeight
 
-// Returns coordinate in program system. Uses to transform coordinate from user input
+// Returns coordinate in canvas system. Uses to transform coordinate from user input.
 const transformX = (x, scale, width) => {
     return x * scale + width / 2
 }
 
+// Returns coordinate in canvas system. Uses to transform coordinate from user input.
 const transformY = (y, scale, height) => {
     return y * scale * (-1) + height / 2
 }
 
-
-// Returns coordinate in canvas system. Uses to log some points got from formulas calculations.
+// Returns coordinate in program system. Uses to log some points got from formulas calculations.
 const retransformX = (x, scale, width) => {
     return (x - width / 2) / scale
 }
 
+// Returns coordinate in program system. Uses to log some points got from formulas calculations.
 const retransformY = (y, scale, height) => {
     return (y - height / 2) / scale * (-1)
 }
 
-// Returns option for select with value of some point got from inputs
+// Returns option for select with value of some point got from inputs.
 const getPointOption = (xInput, yInput, scale, width, height) => {
     const option = document.createElement('option')
 
@@ -48,108 +50,6 @@ const getPointOption = (xInput, yInput, scale, width, height) => {
     option.value = JSON.stringify(newPoint)
     
     return option
-}
-
-const drawCoordinateAxes = (context, width, height, step, settings) => {
-    context.font = settings.labelsFont
-    context.fillStyle = settings.labelsFillStyle
-    context.textAlign = 'center'
-    context.fillText('X', width - settings.labelsMargin, height / 2 - settings.stripLength - 5) // x label
-    context.fillText('Y', width / 2 + settings.stripLength + 10, settings.labelsMargin) // y label
-    
-    context.beginPath()
-    
-    // horizontal line drawing
-    context.moveTo(0, height / 2)
-    context.lineTo(width, height / 2)
-
-    // vertical line drawing
-    context.moveTo(width / 2, 0)
-    context.lineTo(width / 2, height)
-
-    // x arrow drawing
-    context.moveTo(width, height / 2)
-    context.lineTo(width - settings.arrowLength / 1.5, height / 2 - settings.arrowLength / 3)
-    context.moveTo(width, height / 2)
-    context.lineTo(width - settings.arrowLength / 1.5, height / 2 + settings.arrowLength / 3)
-
-    // y arrow drawing
-    context.moveTo(width / 2, 0)
-    context.lineTo(width / 2 - settings.arrowLength / 3, settings.arrowLength / 1.5)
-    context.moveTo(width / 2, 0)
-    context.lineTo(width / 2 + settings.arrowLength / 3, settings.arrowLength / 1.5)
-
-    // x coordinate lines drawing
-    for (let x = width / 2 + step; x <= width; x += step) {
-        context.moveTo(x, height / 2 - settings.stripLength / 2)
-        context.lineTo(x, height / 2 + settings.stripLength / 2)
-        context.moveTo(width - x, height / 2 - settings.stripLength / 2)
-        context.lineTo(width - x, height / 2 + settings.stripLength / 2)
-    }
-
-    // y coordinate lines drawing
-    for (let y = height / 2 + step; y <= height; y += step) {
-        context.moveTo(width / 2 - settings.stripLength / 2, y)
-        context.lineTo(width / 2 + settings.stripLength / 2, y)
-        context.moveTo(width / 2 - settings.stripLength / 2, height - y)
-        context.lineTo(width / 2 + settings.stripLength / 2, height - y)
-    }
-
-    context.strokeStyle = settings.strokeStyle
-    context.lineWidth = settings.lineWidth
-
-    context.stroke()
-}
-
-const drawGrid = (context, width, height, step, settings) => {
-    context.beginPath()
-
-    // horizontal grid lines drawing
-    for (let y = height / 2 + step; y <= height; y += step) {
-        context.moveTo(0, y)
-        context.lineTo(width, y)
-        context.moveTo(0, height / 2 - (y - height / 2))
-        context.lineTo(width, height / 2 - (y - height / 2))
-    }
-    
-    // vertical grid lines drawing
-    for (let x = width / 2 + step; x <= width; x += step) {
-        context.moveTo(x, 0)
-        context.lineTo(x, height)
-        context.moveTo(width / 2 - (x - width / 2), 0)
-        context.lineTo(width / 2 - (x - width / 2), height)
-    }
-
-    context.strokeStyle = settings.strokeStyle
-    context.lineWidth = settings.lineWidth
-
-    context.stroke()
-}
-
-const drawPoint = (context, point, settings) => {
-    context.beginPath()
-    context.arc(point.x, point.y, settings.radius, 0, 2 * Math.PI)
-    context.strokeStyle = settings.strokeStyle  
-    context.lineWidth = settings.lineWidth
-    context.stroke()
-    context.fillStyle = settings.fillStyle
-    context.fill()
-}
-
-const refreshCoordinateAxes = (context, width, height, step, axesSettings, gridSettings) => {
-    context.clearRect(0, 0, width, height)
-    drawCoordinateAxes(context, width, height, step, axesSettings)
-    drawGrid(context, width, height, step, gridSettings)
-}
-
-const drawExistingPoints = (context, supportPointsSelect, controlPointsSelect, supportPointSettings, controlPointSettings) => {
-    for (let i = 0; i < supportPointsSelect.options.length; i++) {
-        drawPoint(context, JSON.parse(supportPointsSelect.options[i].value), supportPointSettings)
-    }
-
-    for (let i = 0; i < controlPointsSelect.options.length; i++) {
-        drawPoint(context, JSON.parse(controlPointsSelect.options[i].value), controlPointSettings)
-    }
 }
 
 // Binomial coefficient is used to calculate Berstein polynomia

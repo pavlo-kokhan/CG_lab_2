@@ -1,5 +1,4 @@
 const scale = 20
-
 const floatTolerance = 0.000001
 
 const axesSettings = {
