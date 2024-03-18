@@ -9,54 +9,44 @@
 <body>
     <div class="container">
         <div class="menu">
-            <div class="menu-header">
+            <h2 class="menu-header">
                 Settings
-            </div>
+            </h2>
 
-            <div class="menu-item labels">
-                <label for="support-points-select">Support Points</label>
-                <select class="support-points-select" name="support-points-select" id="support-points-select" ></select>
-                <div class="menu-item">
+            <div class="points-select-container">
+                <div>Support Points</div>
+                <select class="support-points-select" name="support-points-select" id="support-points-select"></select>
+
+                <div class="select-buttons">
                     <button class="btn-support-points-edit">Edit</button>
                     <button class="btn-support-points-delete">Delete</button>
                 </div>
             </div>
 
-            <div class="menu-item labels">
-                <label for="control-points-select">Control Points</label>
-                <select class="control-points-select" name="control-points-select" id="control-points-select" ></select>
-                <div class="menu-item">
+            <div class="points-select-container">
+                <div>Control Points</div>
+                <select class="control-points-select" name="control-points-select" id="control-points-select"></select>
+
+                <div class="select-buttons">
                     <button class="btn-control-points-edit">Edit</button>
                     <button class="btn-control-points-delete">Delete</button>
                 </div>
             </div>
 
-            <div class="menu-point-input">
-                <input class="point-input" id="x-coord" type="number" placeholder="X">
-                <input class="point-input" id="y-coord" type="number" placeholder="Y">
+            <div class="point-coord-input">
+                <input id="x-coord" type="number" placeholder="X">
+                <input id="y-coord" type="number" placeholder="Y">
             </div>
 
-            <div class="menu-item">
-                <input class="point-input one" id="curve-step" type="number" placeholder="Curve Step (t)">
+            <div class="step-input">
+                <input id="curve-step" type="number" placeholder="Curve Step">
             </div>
 
-            <div class="menu-item">
+            <div class="bottom-buttons">
                 <button class="btn-add-support-point">Add Support Point</button>
-            </div>
-
-            <div class="menu-item">
                 <button class="btn-add-control-point">Add Control Point</button>
-            </div>
-
-            <div class="menu-item">
                 <button class="btn-clear">Clear</button>
-            </div>
-
-            <div class="menu-item">
                 <button class="btn-draw-curve-parametric">Draw Curve Parametric</button>
-            </div>
-
-            <div class="menu-item">
                 <button class="btn-draw-curve-recursive">Draw Curve Recursive</button>
             </div>
         </div>
@@ -66,6 +56,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
